@@ -7,7 +7,7 @@
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "babel src -d public/lib",
-    "requireBundle": "browserify ./src/main.js > ./public/lib/main.js"
+    "bundle": "browserify ./src/main.js > ./public/lib/main.js"
   },
   "author": "Marc Vousden",
   "license": "MIT",

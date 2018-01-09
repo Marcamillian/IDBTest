@@ -5,16 +5,17 @@ let dbPromise = idb.open('test-db', 4, (upgradeDb)=>{
         case 0:
             var keyValStore = upgradeDb.createObjectStore('keyval');
             keyValStore.put("world", "hello")
+            
     }
 })
 
 // DOM elements
-let inputRecord = document.querySelector('button')
-let recordKey = document.querySelector('#record-key')
-let recordValue = document.querySelector('#record-value')
+const inputRecord = document.querySelector('button')
+const recordKey = document.querySelector('#record-key')
+const recordValue = document.querySelector('#record-value')
 
 // utility functions
-const addRecord = (key, value)=>{
+const addRecord = (storeKey, key, value)=>{
     return dbPromise.then(function(db){
         var tx = db.transaction('keyval', 'readwrite')
         var keyvalStore = tx.objectStore('keyval')
@@ -29,5 +30,5 @@ inputRecord.addEventListener('click', ()=>{
 
     console.log(`key: ${recordKey.value} || value: ${recordValue.value}`)
 
-    addRecord(recordKey.value, recordValue.value)
+    addRecord('keyval',recordKey.value, recordValue.value)
 })

@@ -5,7 +5,7 @@ const app = express();
 let server;
 
 app.set('port', (process.env.PORT || 8080))
-app.use(express.static('./src/client'))
+app.use(express.static('./public'))
 
 server = http.createServer(app);
 

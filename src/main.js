@@ -7,6 +7,8 @@ const itemValue = document.querySelector('#item-value')
 
 const listName = document.querySelector('#list-name')
 const listCreateButton = document.querySelector('button#list-create')
+const listShowButton = document.querySelector('button#list-show')
+
 
 var dbPromise = idb.open('spend-lists',1, (upgradeDb)=>{
 
@@ -14,12 +16,9 @@ var dbPromise = idb.open('spend-lists',1, (upgradeDb)=>{
 
     // decide on what the new list is OR open the last
 
-
-    switch(upgradeDb.oldVersion){
-        case 0:
-            var keyValStore = upgradeDb.createObjectStore('lists');
-            keyValStore.put([{description: "hamburger", cost: 2.40}], "firstList")
-    }
+    var listStore = upgradeDb.createObjectStore('lists', 1 , {keyPath:'id'});
+    listStore.put([{description: "hamburger", cost: 2.40}])
+    
 })
 
 
@@ -31,8 +30,8 @@ const addRecord = (listKey, description, cost)=>{
     }).then((updatedList)=>{
         return dbPromise.then((db)=>{
             var tx = db.transaction('lists', 'readwrite')
-            var keyvalStore = tx.objectStore('lists')
-            keyvalStore.put(updatedList, "firstList")
+            var listStore = tx.objectStore('lists')
+            listStore.put(updatedList, "firstList")
             return tx.complete;
         })
     })
@@ -40,17 +39,32 @@ const addRecord = (listKey, description, cost)=>{
 
 var createList = (listName)=>{
     return dbPromise.then(function(db){
-        var tx= db.transaction('keyval')
+        var tx= db.transaction('lists', 'readwrite')
+        var listStore = tx.objectStore('lists')
+        listStore.put({}, listName)
+        return tx.complete
     })
 }
 
 var getList = (listKey)=>{
     return dbPromise.then((db)=>{
         var tx = db.transaction('lists');
-        var keyvalStore = tx.objectStore('lists')
-        return keyvalStore.get(listKey)
+        var listStore = tx.objectStore('lists')
+        return listStore.get(listKey)
     })
 }
+
+let getListNames =()=>{
+    return dbPromise.then((db)=>{
+        var tx = db.transaction('lists');
+        var listStore = tx.objectStore('lists')
+        console.log(listStore.indexNames)
+        return listStore.getAll()
+    })
+}
+
+
+// events
 
 inputRecord.addEventListener('click', ()=>{
     console.log("adding a record")
@@ -62,5 +76,14 @@ inputRecord.addEventListener('click', ()=>{
 
 
 listCreateButton.addEventListener('click',()=>{
+    
+    createList(listName.value).then(()=>{
+        console.log(`List created: ${listName.value}`)
+    })
+})
 
+listShowButton.addEventListener('click',()=>{
+    getListNames().then((lists)=>{
+        console.log(lists)
+    })
 })

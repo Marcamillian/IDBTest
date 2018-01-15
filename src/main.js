@@ -10,19 +10,26 @@ const listCreateButton = document.querySelector('button#list-create')
 const listShowButton = document.querySelector('button#list-show')
 
 // things to do with the list
-const listNames = new Set(['firstList'])
-let activeList = 'firstList'
+const listNames = ['firstList']
+let activeList = listNames[0]
 
 
 var dbPromise = idb.open('spend-lists',1, (upgradeDb)=>{
-    var listStore = upgradeDb.createObjectStore('purchased-items', {autoIncrement: true});
-    listStore.createIndex('by-list', "listName")
+    switch(upgradeDb.oldVersion){
+        case 0:
+            var listStore = upgradeDb.createObjectStore('purchased-items', {autoIncrement: true});
+            listStore.createIndex('by-list', "listName")
+    }
+
+
+    console.log(` ${upgradeDb.oldVersion}`)
 })
+
+console.log(`database open: ${dbPromise}`)
 
 
 // utility functions
 const addRecord = (listName, description, cost)=>{
-
     console.log(`description: ${description} cost: ${cost}`)
     return dbPromise.then((db)=>{
         var tx = db.transaction('purchased-items', 'readwrite')
@@ -31,35 +38,20 @@ const addRecord = (listName, description, cost)=>{
         return tx.complete;
     })
 }
-try{
-    addRecord("someList", "hat", 50).then(()=>{
-        console.log("added a default thing")
-    })
-}catch(err){
-    console.log(`something couldn't be added ${err.message}`)
-}
-
 
 var createList = (listName)=>{
-    listNames.push(listName)
-
+    if(!listNames.includes(listName)){
+        listNames.push(listName)
+        activeList = listName
+    }
 }
 
-var getList = (listKey)=>{
-    return dbPromise.then((db)=>{
-        var tx = db.transaction('purchased-items');
-        var listStore = tx.objectStore('purchased-items')
-        return listStore.get(listKey)
-    })
+var getList = (listName)=>{
+    
 }
 
 let getListNames =()=>{
-    return dbPromise.then((db)=>{
-        var tx = db.transaction('lists');
-        var listStore = tx.objectStore('lists')
-        console.log(listStore.indexNames)
-        return listStore.getAll()
-    })
+    return listNames
 }
 
 
@@ -75,14 +67,9 @@ inputRecord.addEventListener('click', ()=>{
 
 
 listCreateButton.addEventListener('click',()=>{
-    
-    createList(listName.value).then(()=>{
-        console.log(`List created: ${listName.value}`)
-    })
+    createList(listName.value)
 })
 
 listShowButton.addEventListener('click',()=>{
-    getListNames().then((lists)=>{
-        console.log(lists)
-    })
+    console.log(getListNames())
 })

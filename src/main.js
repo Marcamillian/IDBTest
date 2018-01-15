@@ -8,29 +8,26 @@ const itemValue = document.querySelector('#item-value')
 const listName = document.querySelector('#list-name')
 const listCreateButton = document.querySelector('button#list-create')
 const listShowButton = document.querySelector('button#list-show')
+const changeListInput = document.querySelector('#change-list-name')
+const changeListButton = document.querySelector('#change-list-button')
 
-// things to do with the list
-const listNames = ['firstList']
-let activeList = listNames[0]
+// variables
+let currentList;
 
-
-var dbPromise = idb.open('spend-lists',1, (upgradeDb)=>{
+var dbPromise = idb.open('spend-lists',2, (upgradeDb)=>{
     switch(upgradeDb.oldVersion){
         case 0:
             var listStore = upgradeDb.createObjectStore('purchased-items', {autoIncrement: true});
             listStore.createIndex('by-list', "listName")
+        case 1:
+            var listNameStore = upgradeDb.createObjectStore('list-names');
+            listNameStore.put(true,"Default List")
     }
-
-
-    console.log(` ${upgradeDb.oldVersion}`)
 })
-
-console.log(`database open: ${dbPromise}`)
 
 
 // utility functions
 const addRecord = (listName, description, cost)=>{
-    console.log(`description: ${description} cost: ${cost}`)
     return dbPromise.then((db)=>{
         var tx = db.transaction('purchased-items', 'readwrite')
         var listStore = tx.objectStore('purchased-items')
@@ -40,18 +37,39 @@ const addRecord = (listName, description, cost)=>{
 }
 
 var createList = (listName)=>{
-    if(!listNames.includes(listName)){
-        listNames.push(listName)
-        activeList = listName
-    }
+    return dbPromise.then((db)=>{
+        var tx = db.transaction('list-names', 'readwrite')
+        var listNameStore = tx.objectStore('list-names')
+        listNameStore.put(true, listName)
+        return tx.complete
+    })
+}
+
+var changeList = (listName)=>{
+    return getList(listName).then((listObject)=>{
+        if(listObject != undefined){
+            currentList = listName;
+            return true
+        }else{
+            return false
+        }
+    })
 }
 
 var getList = (listName)=>{
-    
+    return dbPromise.then((db)=>{
+        var tx = db.transaction('list-names')
+        var listNameStore = tx.objectStore('list-names')
+        return listNameStore.get(listName)
+    })
 }
 
 let getListNames =()=>{
-    return listNames
+    return dbPromise.then((db)=>{
+        var tx = db.transaction('list-names')
+        var listStore = tx.objectStore('list-names')
+        return listStore.getAllKeys()
+    })
 }
 
 
@@ -71,5 +89,13 @@ listCreateButton.addEventListener('click',()=>{
 })
 
 listShowButton.addEventListener('click',()=>{
-    console.log(getListNames())
+    getListNames().then((reply)=>{
+        console.log(reply)
+    })
+})
+
+changeListButton.addEventListener('click', ()=>{
+    changeList(changeListInput.value).then((isListChanged)=>{
+        console.log(`list changed - ${isListChanged}`)
+    })
 })

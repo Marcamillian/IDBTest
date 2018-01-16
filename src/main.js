@@ -11,8 +11,10 @@ const listShowButton = document.querySelector('button#list-show')
 const changeListInput = document.querySelector('#change-list-name')
 const changeListButton = document.querySelector('#change-list-button')
 
+const listnameShowList = document.querySelector('#listname-show-list')
+
 // variables
-let currentList;
+let activeList;
 
 var dbPromise = idb.open('spend-lists',2, (upgradeDb)=>{
     switch(upgradeDb.oldVersion){
@@ -26,7 +28,7 @@ var dbPromise = idb.open('spend-lists',2, (upgradeDb)=>{
 })
 
 
-// utility functions
+// IDB functions
 const addRecord = (listName, description, cost)=>{
     return dbPromise.then((db)=>{
         var tx = db.transaction('purchased-items', 'readwrite')
@@ -48,7 +50,7 @@ var createList = (listName)=>{
 var changeList = (listName)=>{
     return getList(listName).then((listObject)=>{
         if(listObject != undefined){
-            currentList = listName;
+            activeList = listName;
             return true
         }else{
             return false
@@ -72,9 +74,45 @@ let getListNames =()=>{
     })
 }
 
+// UI functions
+const listButtonGen = (listName)=>{
+    let listItem = document.createElement('li')
+
+    listItem.innerText = listName;
+    listItem.addEventListener('click',()=>{
+        changeList(listName).then(()=>{ console.log(`list changed: ${listName}`)})
+    })
+
+    return listItem;
+}
+
+const removeListItems = (element)=>{
+    let listItems = element.querySelectorAll('li')
+    listItems.forEach((li)=>{li.parentNode.removeChild(li)})
+    return element
+}
+
+
+
+
+// === IMPLEMENTION SPECIFIC DETAILS === 
+
+// set the active list
+getListNames().then((names)=>{
+    activeList = names[0]
+})
+
+// clear the list of items
+removeListItems(listnameShowList)
+// populate the list is the listnames in the database
+getListNames().then((names)=>{
+    names.forEach((listName)=>{
+        listnameShowList.appendChild(listButtonGen(listName))
+    })
+})
+
 
 // events
-
 inputRecord.addEventListener('click', ()=>{
     console.log("adding a record")
     console.log(`active list : ${activeList}`)
@@ -99,3 +137,6 @@ changeListButton.addEventListener('click', ()=>{
         console.log(`list changed - ${isListChanged}`)
     })
 })
+
+
+

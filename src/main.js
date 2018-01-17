@@ -13,6 +13,9 @@ const changeListButton = document.querySelector('#change-list-button')
 
 const listnameShowList = document.querySelector('#listname-show-list')
 
+const listitemShowButton = document.querySelector('#listitem-show-button')
+const listitemShowList = document.querySelector('#listitem-show-list')
+
 // variables
 let activeList;
 
@@ -74,16 +77,32 @@ let getListNames =()=>{
     })
 }
 
-// UI functions
-const listButtonGen = (listName)=>{
+let getListItems = (listName = "Default List")=>{
+    return dbPromise.then((db)=>{
+        var tx = db.transaction('purchased-items')
+        var purchasedItemStore = tx.objectStore('purchased-items')
+        return purchasedItemStore.getAll()
+    }).then((purchasedItems)=>{
+        return purchasedItems.filter((item)=>{ return item.listName == listName})
+    })
+}
+
+// UI functions - pure functions
+const listButtonGen = (listName = "Default List", callback = ()=>{console.log(`list changed: ${listName}`)})=>{
     let listItem = document.createElement('li')
 
     listItem.innerText = listName;
     listItem.addEventListener('click',()=>{
-        changeList(listName).then(()=>{ console.log(`list changed: ${listName}`)})
+        changeList(listName).then(callback)
     })
 
     return listItem;
+}
+
+const purchasedItemGen = ({description = 'Missing Item', price = 0} = {})=>{
+    let listItem = document.createElement('li')
+    listItem.innerText = `${description} -  £${price}`
+    return listItem
 }
 
 const removeListItems = (element)=>{
@@ -92,23 +111,36 @@ const removeListItems = (element)=>{
     return element
 }
 
-
-
-
 // === IMPLEMENTION SPECIFIC DETAILS === 
+
+const updateListItemDisplay = ()=>{
+    console.log(`updating list items`)
+    getListItems(activeList).then((purchasedListItems)=>{
+        // clear the list
+        removeListItems(listitemShowList)
+        purchasedListItems.forEach((listItem)=>{
+            listitemShowList.appendChild(purchasedItemGen(listItem))
+        })
+    })
+}
+const updateListNameDisplay = ()=>{
+    // clear the list of items
+    removeListItems(listnameShowList)
+    // populate the list is the listnames in the database
+    return getListNames().then((names)=>{
+        names.forEach((listName)=>{
+            listnameShowList.appendChild(listButtonGen(listName, updateListItemDisplay))
+        })
+
+        return true
+    })
+}
+
 
 // set the active list
 getListNames().then((names)=>{
     activeList = names[0]
-})
-
-// clear the list of items
-removeListItems(listnameShowList)
-// populate the list is the listnames in the database
-getListNames().then((names)=>{
-    names.forEach((listName)=>{
-        listnameShowList.appendChild(listButtonGen(listName))
-    })
+    updateListNameDisplay()
 })
 
 
@@ -117,15 +149,21 @@ inputRecord.addEventListener('click', ()=>{
     console.log("adding a record")
     console.log(`active list : ${activeList}`)
     //console.log(`key: ${recordKey.value} || value: ${recordValue.value}`)
-    addRecord(activeList, itemDescription.value, itemValue.value ).then(()=>{console.log("record added")})
+    addRecord(activeList, itemDescription.value, itemValue.value ).then(()=>{
+        console.log("record added")
+        updateListItemDisplay()
+    })
     //addRecord('keyval',itemDescription.value, itemValue.value)
 })
 
 
 listCreateButton.addEventListener('click',()=>{
-    createList(listName.value)
+    createList(listName.value).then(()=>{
+        updateListNameDisplay()
+    })
 })
 
+/*
 listShowButton.addEventListener('click',()=>{
     getListNames().then((reply)=>{
         console.log(reply)
@@ -138,5 +176,9 @@ changeListButton.addEventListener('click', ()=>{
     })
 })
 
+listitemShowButton.addEventListener('click', ()=>{
+    updateListItemDisplay()
+})
+*/
 
 

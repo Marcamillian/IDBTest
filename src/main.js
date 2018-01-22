@@ -81,17 +81,17 @@ const getListItems = (listName = "Default List")=>{
     return dbPromise.then((db)=>{
         var tx = db.transaction('purchased-items')
         var purchasedItemStore = tx.objectStore('purchased-items')
-        return purchasedItemStore.getAll()
-    }).then((purchasedItems)=>{
-
-        return purchasedItems.filter((item, index)=>{
-            
-            item.tableKey = index+1; // THIS DOESN't WORK - the index is not the key 
-            return item.listName == listName
+        return Promise.all([
+            purchasedItemStore.getAll(),
+            purchasedItemStore.getAllKeys()
+        ])
+    }).then((purchasedItemDetails)=>{
+        return purchasedItemDetails[0].map((itemValues, index)=>{
+            itemValues.storeKey = purchasedItemDetails[1][index]
+            return itemValues
+        }).filter((itemDetails)=>{
+            return itemDetails.listName == listName
         })
-
-
-
     })
 }
 
@@ -123,13 +123,13 @@ const listButtonGen = (listName = "Default List", callback = ()=>{console.log(`l
     return listItem;
 }
 
-const purchasedItemGen = ({description = 'Missing Item', price = 0, tableKey = undefined} = {})=>{
+const purchasedItemGen = ({description = 'Missing Item', price = 0, storeKey = undefined} = {})=>{
     let listItem = document.createElement('li')
     let deleteButton = document.createElement('button')
 
     deleteButton.innerText = " - "
     deleteButton.addEventListener("click", ()=>{
-        deletePurchasedItem(tableKey).then(()=>{
+        deletePurchasedItem(storeKey).then(()=>{
             updateListItemDisplay()
         })  
     })

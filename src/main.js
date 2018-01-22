@@ -83,12 +83,24 @@ const getListItems = (listName = "Default List")=>{
         var purchasedItemStore = tx.objectStore('purchased-items')
         return purchasedItemStore.getAll()
     }).then((purchasedItems)=>{
-        return purchasedItems.filter((item)=>{ return item.listName == listName})
+
+        return purchasedItems.filter((item, index)=>{
+            
+            item.tableKey = index+1; // THIS DOESN't WORK - the index is not the key 
+            return item.listName == listName
+        })
+
+
+
     })
 }
 
 const deletePurchasedItem = (itemKey)=>{
-    // delete the item with that numbered index
+    return dbPromise.then((db)=>{
+        var tx = db.transaction('purchased-items', 'readwrite')
+        var purchasedItemStore = tx.objectStore('purchased-items')
+        return purchasedItemStore.delete(itemKey)
+    })
 }
 
 const deleteList = (listKey)=>{
@@ -111,9 +123,20 @@ const listButtonGen = (listName = "Default List", callback = ()=>{console.log(`l
     return listItem;
 }
 
-const purchasedItemGen = ({description = 'Missing Item', price = 0} = {})=>{
+const purchasedItemGen = ({description = 'Missing Item', price = 0, tableKey = undefined} = {})=>{
     let listItem = document.createElement('li')
+    let deleteButton = document.createElement('button')
+
+    deleteButton.innerText = " - "
+    deleteButton.addEventListener("click", ()=>{
+        deletePurchasedItem(tableKey).then(()=>{
+            updateListItemDisplay()
+        })  
+    })
+
     listItem.innerText = `${description} -  £${price}`
+    listItem.appendChild(deleteButton)
+
     return listItem
 }
 

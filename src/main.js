@@ -41,7 +41,7 @@ const addRecord = (listName, description, cost)=>{
     })
 }
 
-var createList = (listName)=>{
+const createList = (listName)=>{
     return dbPromise.then((db)=>{
         var tx = db.transaction('list-names', 'readwrite')
         var listNameStore = tx.objectStore('list-names')
@@ -50,7 +50,7 @@ var createList = (listName)=>{
     })
 }
 
-var changeList = (listName)=>{
+const changeList = (listName)=>{
     return getList(listName).then((listObject)=>{
         if(listObject != undefined){
             activeList = listName;
@@ -61,7 +61,7 @@ var changeList = (listName)=>{
     })
 }
 
-var getList = (listName)=>{
+const getList = (listName)=>{
     return dbPromise.then((db)=>{
         var tx = db.transaction('list-names')
         var listNameStore = tx.objectStore('list-names')
@@ -69,7 +69,7 @@ var getList = (listName)=>{
     })
 }
 
-let getListNames =()=>{
+const getListNames =()=>{
     return dbPromise.then((db)=>{
         var tx = db.transaction('list-names')
         var listStore = tx.objectStore('list-names')
@@ -77,7 +77,7 @@ let getListNames =()=>{
     })
 }
 
-let getListItems = (listName = "Default List")=>{
+const getListItems = (listName = "Default List")=>{
     return dbPromise.then((db)=>{
         var tx = db.transaction('purchased-items')
         var purchasedItemStore = tx.objectStore('purchased-items')
@@ -86,6 +86,18 @@ let getListItems = (listName = "Default List")=>{
         return purchasedItems.filter((item)=>{ return item.listName == listName})
     })
 }
+
+const deletePurchasedItem = (itemKey)=>{
+    // delete the item with that numbered index
+}
+
+const deleteList = (listKey)=>{
+    // delete all the items with that list named
+
+    // delete the list
+}
+
+
 
 // UI functions - pure functions
 const listButtonGen = (listName = "Default List", callback = ()=>{console.log(`list changed: ${listName}`)})=>{

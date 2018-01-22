@@ -95,18 +95,29 @@ const getListItems = (listName = "Default List")=>{
     })
 }
 
-const deletePurchasedItem = (itemKey)=>{
+const deletePurchasedItem = (tableKey)=>{
     return dbPromise.then((db)=>{
-        var tx = db.transaction('purchased-items', 'readwrite')
-        var purchasedItemStore = tx.objectStore('purchased-items')
-        return purchasedItemStore.delete(itemKey)
+        let tx = db.transaction('purchased-items', 'readwrite')
+        let purchasedItemStore = tx.objectStore('purchased-items')
+        return purchasedItemStore.delete(tableKey)
     })
 }
 
-const deleteList = (listKey)=>{
-    // delete all the items with that list named
+const deleteList = (listName)=>{
+    return dbPromise.then((db)=>{
+        let tx = db.transaction(['list-names','purchased-items'], 'readwrite')
+        let listNameStore = tx.objectStore('list-names')
+        let purchasedItemStore = tx.objectStore('purchased-items')
 
-    // delete the list
+        let listNameDelete = listNameStore.delete(listName);
+        let listItemsDelete = purchasedItemStore.openCursor(null, "next").then(function removeItemByList(cursor){
+            if(!cursor) return // recursive exit condition
+            if(cursor.value.listName == listName) cursor.delete()    // if list is right - delete item
+            return cursor.continue().then(removeItemByList) // move to the next item
+        })
+
+        return Promise.all([listNameDelete, listItemsDelete])
+    })
 }
 
 
@@ -114,11 +125,20 @@ const deleteList = (listKey)=>{
 // UI functions - pure functions
 const listButtonGen = (listName = "Default List", callback = ()=>{console.log(`list changed: ${listName}`)})=>{
     let listItem = document.createElement('li')
+    let deleteButton = document.createElement('button')
+
+    deleteButton.innerText = "-"
+    deleteButton.addEventListener('click', ()=>{
+        deleteList(listName).then(()=>{
+            updateListNameDisplay()
+        })
+    })
 
     listItem.innerText = listName;
     listItem.addEventListener('click',()=>{
         changeList(listName).then(callback)
     })
+    if(listName != "Default List") listItem.appendChild(deleteButton)
 
     return listItem;
 }
